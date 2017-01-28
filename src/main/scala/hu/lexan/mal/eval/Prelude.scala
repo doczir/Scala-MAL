@@ -105,6 +105,7 @@ object Prelude {
     env.define("list?".msym, MFunction(list_test))
     env.define("empty?".msym, MFunction(empty_test))
     env.define("count".msym, MFunction(count))
+    env.define("=".msym, MFunction(equal_test))
     env.define("<".msym, MFunction(lt))
     env.define(">".msym, MFunction(gt))
     env.define("<=".msym, MFunction(lte))
