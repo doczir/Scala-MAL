@@ -59,6 +59,11 @@ object Evaluator {
       case MNil => evaluate(falseBranch, env)
       case _ => evaluate(truthBranch, env)
     }
+    case first :: truthBranch :: Nil => evaluate(first, env).flatMap {
+      case MFalse => Right(MNil)
+      case MNil => Right(MNil)
+      case _ => evaluate(truthBranch, env)
+    }
     case _ => Left(MalEvaluationError("Invalid number of elements in if expression", ast))
   }
 
