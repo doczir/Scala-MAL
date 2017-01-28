@@ -31,18 +31,16 @@ object Evaluator {
     }
   }
 
-  private def handleLet(ast: MList, env: Environment, rest: List[MalExpr]) = {
-    rest match {
-      case (MList(definitions) :: expr :: Nil) =>
-        letEnv(definitions, env).flatMap { newEnv =>
-          evaluate(expr, newEnv)
-        }
-      case (MVector(definitions) :: expr :: Nil) =>
-        letEnv(definitions, env).flatMap { newEnv =>
-          evaluate(expr, newEnv)
-        }
-      case _ => Left(MalEvaluationError("Illegal 'let*' expression", ast))
-    }
+  private def handleLet(ast: MList, env: Environment, rest: List[MalExpr]) = rest match {
+    case (MList(definitions) :: expr :: Nil) =>
+      letEnv(definitions, env).flatMap { newEnv =>
+        evaluate(expr, newEnv)
+      }
+    case (MVector(definitions) :: expr :: Nil) =>
+      letEnv(definitions, env).flatMap { newEnv =>
+        evaluate(expr, newEnv)
+      }
+    case _ => Left(MalEvaluationError("Illegal 'let*' expression", ast))
   }
 
   def handleDo(ast: MList, env: Environment, rest: List[MalExpr]): Either[MalError, MalExpr] = {
@@ -55,12 +53,22 @@ object Evaluator {
     evaluated
   }
 
+  def handleIf(ast: MList, env: Environment, rest: List[MalExpr]): Either[MalError, MalExpr] = rest match {
+    case first :: truthBranch :: falseBranch :: Nil => evaluate(first, env).flatMap {
+      case MFalse => evaluate(falseBranch, env)
+      case MNil => evaluate(falseBranch, env)
+      case _ => evaluate(truthBranch, env)
+    }
+    case _ => Left(MalEvaluationError("Invalid number of elements in if expression", ast))
+  }
+
+
   private def applyAst(ast: MList, env: Environment): Either[MalError, MalExpr] = ast match {
     case list@MList(Nil) => Right(list)
     case MList(MSymbol("def!") :: rest) => define(ast, env, rest)
     case MList(MSymbol("let*") :: rest) => handleLet(ast, env, rest)
     case MList(MSymbol("do") :: rest) => handleDo(ast, env, rest)
-    //    case MList(MSymbol("if") :: rest) => handleIf(ast, env, rest)
+    case MList(MSymbol("if") :: rest) => handleIf(ast, env, rest)
     case list: MList => applyFunction(ast, env, list)
     case _ => Left(MalEvaluationError("Invalid list expression", ast))
   }
