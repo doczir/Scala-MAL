@@ -36,7 +36,7 @@ object MalParser extends RegexParsers {
   def mnil: Parser[MNil.type] = "nil" ^^ (_ => MNil)
 
   def integer: Parser[MalExpr] = {
-    """-?[1-9][0-9]*""".r ^^ (int => int.toInt.mi)
+    """-?[0-9]+""".r ^^ (int => int.toInt.mi)
   }
 
   def string: Parser[MalExpr] = {

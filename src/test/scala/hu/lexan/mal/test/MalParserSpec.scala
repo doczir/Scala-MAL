@@ -21,6 +21,7 @@ class MalParserSpec extends FlatSpec with Matchers {
 
   "The parser" should "read numbers" in {
     parse("1") shouldBe 1.mi
+    parse("0") shouldBe 0.mi
     parse(",,,1") shouldBe 1.mi
     parse("7") shouldBe 7.mi
     parse("    7") shouldBe 7.mi
@@ -106,5 +107,10 @@ class MalParserSpec extends FlatSpec with Matchers {
 
   it should "read metadata" in {
     parse("""^{"a" 1} [1 2 3]""") shouldBe List("with-meta".msym, List(1.mi, 2.mi, 3.mi).mv, Map[MalExpr, MalExpr](("a".mstr, 1.mi)).mm).ml
+  }
+
+  it should "read expressions" in {
+    parse("""(if)""") shouldBe List("if".msym).ml
+    parse("""(if 1)""") shouldBe List("if".msym, 1.mi).ml
   }
 }
