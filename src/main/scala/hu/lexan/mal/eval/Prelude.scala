@@ -89,6 +89,13 @@ object Prelude {
     case _ => Left(MalEvaluationError("Illegal arguments to >=", MList(">=".msym :: args)))
   }
 
+  private def not(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
+    case MFalse :: Nil => Right(MTrue)
+    case MNil :: Nil => Right(MTrue)
+    case _ => Right(MFalse)
+  }
+
+
 
   val env: Environment = {
     val env = new Environment()
@@ -110,6 +117,7 @@ object Prelude {
     env.define(">".msym, MFunction(gt))
     env.define("<=".msym, MFunction(lte))
     env.define(">=".msym, MFunction(gte))
+    env.define("not".msym, MFunction(not))
     env
   }
 
