@@ -1,26 +1,11 @@
 package hu.lexan.mal.test
 
-import hu.lexan.mal.Repl
 import hu.lexan.mal.ast.{MalAstExtensions, MalExpr}
 import org.scalatest.{FlatSpec, Matchers}
 
-/**
-  * Created by robert on 1/23/17.
-  */
-class MalEvalSpec extends FlatSpec with Matchers {
+class MalEvalSpec extends FlatSpec with Matchers with ReplEvaluator {
 
   import MalAstExtensions._
-
-  def eval(testInput: String): MalExpr = {
-    val result = for {
-      ast <- Repl.read(testInput)
-      result <- Repl.eval(ast)
-    } yield result
-    if(result.isLeft)
-      fail(s"${result.left.get.toString} '''$testInput'''")
-
-    result.right.get
-  }
 
   "The evaluator" should "evaluate simple arithmetic expressions" in {
     eval("(+ 1 2)") shouldBe 3.mi

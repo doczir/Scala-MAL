@@ -1,23 +1,10 @@
 package hu.lexan.mal.test
 
-import hu.lexan.mal.Repl
-import hu.lexan.mal.ast.{MalAstExtensions, MalExpr}
+import hu.lexan.mal.ast.MalAstExtensions
 import org.scalatest.{FlatSpec, Matchers}
 
-class MalEnvSpec extends FlatSpec with  Matchers {
-
+class MalEnvSpec extends FlatSpec with Matchers with ReplEvaluator {
   import MalAstExtensions._
-
-  def eval(testInput: String): MalExpr = {
-    val result = for {
-      ast <- Repl.read(testInput)
-      result <- Repl.eval(ast)
-    } yield result
-    if(result.isLeft)
-      fail(s"${result.left.get.toString} '''$testInput'''")
-
-    result.right.get
-  }
 
   "The environment" should "contain prelude" in {
     eval("(+ 1 2)") shouldBe 3.mi
