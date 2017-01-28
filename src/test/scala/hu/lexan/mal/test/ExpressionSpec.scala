@@ -30,7 +30,22 @@ class ExpressionSpec extends FlatSpec with Matchers with ReplEvaluator {
   }
 
   it should "handle if expressions" in {
+    eval("(if true 7 8)") shouldBe 7.mi
+    eval("(if false 7 8)") shouldBe 8.mi
+    eval("""(if true (+ 1 7) (+ 1 8))""") shouldBe 8.mi
+    eval("""(if false (+ 1 7) (+ 1 8))""") shouldBe 9.mi
+    eval("""(if nil 7 8)""") shouldBe 8.mi
+    eval("""(if 0 7 8)""") shouldBe 7.mi
+    eval("""(if "" 7 8)""") shouldBe 7.mi
+    eval("""(if (list) 7 8)""") shouldBe 7.mi
+    eval("""(if (list 1 2 3) 7 8)""") shouldBe 7.mi
+    eval("""(= (list) nil)""") shouldBe false.mb
+  }
 
+  it should "allow for one way if" in {
+    eval("(if false (+ 1 7))") shouldBe MNil
+    eval("(if nil 8 7)") shouldBe 7.mi
+    eval("(if true (+ 1 7))") shouldBe 8.mi
   }
 
 
