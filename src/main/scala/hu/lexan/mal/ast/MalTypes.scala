@@ -5,23 +5,23 @@ import hu.lexan.mal.error.MalError
 // ===================================
 //                AST
 // ===================================
-sealed trait MalExpr
+sealed trait MalExpr extends Any
 
-case class MSymbol(name: String) extends MalExpr
+case class MSymbol(name: String) extends AnyVal with MalExpr
 
-case class MInteger(value: Int) extends MalExpr
+case class MInteger(value: Int) extends AnyVal with MalExpr
 
-case class MList(elements: List[MalExpr]) extends MalExpr
+case class MList(elements: List[MalExpr]) extends AnyVal with MalExpr
 
-case class MVector(elements: List[MalExpr]) extends MalExpr
+case class MVector(elements: List[MalExpr]) extends AnyVal with MalExpr
 
-case class MMap(elements: Map[MalExpr, MalExpr]) extends MalExpr
+case class MMap(elements: Map[MalExpr, MalExpr]) extends AnyVal with MalExpr
 
-case class MString(string: String) extends MalExpr
+case class MString(string: String) extends AnyVal with MalExpr
 
-case class MKeyword(string: String) extends MalExpr
+case class MKeyword(string: String) extends AnyVal with MalExpr
 
-case class MFunction(fn: (List[MalExpr] => Either[MalError, MalExpr])) extends MalExpr
+case class MFunction(fn: (List[MalExpr] => Either[MalError, MalExpr])) extends AnyVal with MalExpr
 
 object MNil extends MalExpr
 
@@ -51,6 +51,10 @@ object MalAstExtensions {
 
   implicit class RichMalMap(val s: Map[MalExpr, MalExpr]) extends AnyVal {
     def mm = MMap(s)
+  }
+
+  implicit class RichMalBool(val s: Boolean) extends AnyVal {
+    def mb: MalExpr = if (s) MTrue else MFalse
   }
 }
 
