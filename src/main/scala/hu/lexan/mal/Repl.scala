@@ -2,13 +2,13 @@ package hu.lexan.mal
 
 import hu.lexan.mal.ast._
 import hu.lexan.mal.error.{MalError, MalEvaluationError, MalParseError}
-import hu.lexan.mal.eval.Evaluator
+import hu.lexan.mal.eval.Interpreter
 
 object Repl {
 
   def read(line: String): Either[MalError, MalExpr] = MalParser(line)
 
-  def eval(ast: MalExpr): Either[MalError, MalExpr] = Evaluator.evaluate(ast)
+  def eval(ast: MalExpr): Either[MalError, MalExpr] = Interpreter.evaluate(ast)
 
   def print(ast: MalExpr): String = AstPrinter.print(ast)
 

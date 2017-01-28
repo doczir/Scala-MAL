@@ -5,7 +5,7 @@ import cats.syntax.traverse._
 import hu.lexan.mal.ast._
 import hu.lexan.mal.error.{MalError, MalEvaluationError}
 
-object Evaluator {
+object Interpreter {
 
   def evaluate(ast: MalExpr): Either[MalError, MalExpr] = {
     evaluate(ast, Prelude.env)
