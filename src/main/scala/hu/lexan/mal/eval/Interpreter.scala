@@ -92,7 +92,7 @@ object Interpreter {
 
   private def applyFunction(ast: MList, env: Environment, list: MList) = {
     for {
-      evaluated <- evaluate_ast(list, env)
+      evaluated <- evaluateAst(list, env)
       result <- {
         val evalElements: List[MalExpr] = evaluated.asInstanceOf[MList].elements
         val first = evalElements.head
@@ -104,7 +104,7 @@ object Interpreter {
     } yield result
   }
 
-  private def evaluate_ast(ast: MalExpr, env: Environment): Either[MalError, MalExpr] = ast match {
+  private def evaluateAst(ast: MalExpr, env: Environment): Either[MalError, MalExpr] = ast match {
     case sym: MSymbol => env.get(sym)
     case MList(elems) => elems match {
       case _ => elems.traverseU(evaluate(_, env)).map { items => MList(items) }
@@ -116,7 +116,7 @@ object Interpreter {
 
   def evaluate(ast: MalExpr, env: Environment): Either[MalError, MalExpr] = ast match {
     case list: MList => applyAst(list, env)
-    case _ => evaluate_ast(ast, env)
+    case _ => evaluateAst(ast, env)
   }
 
 }
