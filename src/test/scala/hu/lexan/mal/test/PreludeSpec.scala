@@ -21,4 +21,51 @@ class PreludeSpec extends FlatSpec with Matchers with ReplEvaluator {
   }
 
 
+  it should "contain basic conditionals" in {
+    eval("(= 2 1)") shouldBe false.mb
+    eval("(= 1 1)") shouldBe true.mb
+    eval("(= 1 2)") shouldBe false.mb
+    eval("(= 1 (+ 1 1))") shouldBe false.mb
+    eval("(= 2 (+ 1 1))") shouldBe true.mb
+    eval("(= nil 1)") shouldBe false.mb
+    eval("(= nil nil)") shouldBe true.mb
+
+    eval("(> 2 1)") shouldBe true.mb
+    eval("(> 1 1)") shouldBe false.mb
+    eval("(> 1 2)") shouldBe false.mb
+
+    eval("(>= 2 1)") shouldBe true.mb
+    eval("(>= 1 1)") shouldBe true.mb
+    eval("(>= 1 2)") shouldBe false.mb
+
+    eval("(< 2 1)") shouldBe false.mb
+    eval("(< 1 1)") shouldBe false.mb
+    eval("(< 1 2)") shouldBe true.mb
+
+    eval("(<= 2 1)") shouldBe false.mb
+    eval("(<= 1 1)") shouldBe true.mb
+    eval("(<= 1 2)") shouldBe true.mb
+  }
+
+  it should "handle equality checks" in {
+    eval("""(= 1 1)""") shouldBe true.mb
+    eval("""(= 0 0)""") shouldBe true.mb
+    eval("""(= 1 0)""") shouldBe false.mb
+    eval("""(= "" "")""") shouldBe true.mb
+    eval("""(= "abc" "abc")""") shouldBe true.mb
+    eval("""(= "abc" "")""") shouldBe false.mb
+    eval("""(= "" "abc")""") shouldBe false.mb
+    eval("""(= "abc" "def")""") shouldBe false.mb
+    eval("""(= "abc" "ABC")""") shouldBe false.mb
+
+    eval("""(= (list) (list))""") shouldBe true.mb
+    eval("""(= (list 1 2) (list 1 2))""") shouldBe true.mb
+    eval("""(= (list 1) (list))""") shouldBe false.mb
+    eval("""(= (list) (list 1))""") shouldBe false.mb
+    eval("""(= 0 (list))""") shouldBe false.mb
+    eval("""(= (list) 0)""") shouldBe false.mb
+    eval("""(= (list) "")""") shouldBe false.mb
+    eval("""(= "" (list))""") shouldBe false.mb
+  }
+
 }
