@@ -28,8 +28,21 @@ object Prelude {
   }
 
   private def prn(args: List[MalExpr]): Either[MalError, MalExpr] = {
-    println(args.map(AstPrinter.print).mkString(" "))
+    println(args.map(AstPrinter.print(_)).mkString(" "))
     Right(MNil)
+  }
+
+  private def prnln(args: List[MalExpr]): Either[MalError, MalExpr] = {
+    println(args.map(AstPrinter.print(_, readable = false)).mkString(" "))
+    Right(MNil)
+  }
+
+  private def pr_str(args: List[MalExpr]): Either[MalError, MalExpr] = {
+    Right(MString(args.map(AstPrinter.print(_)).mkString(" ")))
+  }
+
+  private def str(args: List[MalExpr]): Either[MalError, MalExpr] = {
+    Right(MString(args.map(AstPrinter.print(_, readable = false)).mkString(" ")))
   }
 
   private def list(args: List[MalExpr]): Either[MalError, MalExpr] = {
@@ -44,7 +57,10 @@ object Prelude {
     env.define("*".msym, MFunction(mul))
     env.define("/".msym, MFunction(div))
     env.define("list".msym, MFunction(list))
+    env.define("pr-str".msym, MFunction(pr_str))
+    env.define("str".msym, MFunction(str))
     env.define("prn".msym, MFunction(prn))
+    env.define("println".msym, MFunction(prnln))
     env
   }
 
