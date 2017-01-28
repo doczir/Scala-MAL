@@ -68,9 +68,27 @@ object Interpreter {
   }
 
 
+  def createClojure(ast: MList, env: Environment, rest: List[MalExpr]): scala.Either[MalError, MalExpr] = rest match {
+    case a1 :: a2 :: Nil => for {
+      params <- a1 match {
+        case MList(lst) => Right(lst)
+        case MVector(lst) => Right(lst)
+        case _ => Left(MalEvaluationError("Clojure parameter list must either be a list or a vector", ast))
+      }
+    } yield {
+      MFunction(args => {
+        for {
+          newEnv <- Environment.bind(Some(env), params, args)
+          evaluated <- evaluate(a2, newEnv)
+        } yield evaluated
+      })
+    }
+  }
+
   private def applyAst(ast: MList, env: Environment): Either[MalError, MalExpr] = ast match {
     case list@MList(Nil) => Right(list)
     case MList(MSymbol("def!") :: rest) => define(ast, env, rest)
+    case MList(MSymbol("fn*") :: rest) => createClojure(ast, env, rest)
     case MList(MSymbol("let*") :: rest) => handleLet(ast, env, rest)
     case MList(MSymbol("do") :: rest) => handleDo(ast, env, rest)
     case MList(MSymbol("if") :: rest) => handleIf(ast, env, rest)
