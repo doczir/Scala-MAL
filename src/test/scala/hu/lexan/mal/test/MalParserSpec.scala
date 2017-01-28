@@ -1,5 +1,6 @@
-package hu.lexan.mal
+package hu.lexan.mal.test
 
+import hu.lexan.mal.Repl
 import hu.lexan.mal.ast._
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -23,7 +24,7 @@ class MalParserSpec extends FlatSpec with Matchers {
     parse(",,,1") shouldBe 1.mi
     parse("7") shouldBe 7.mi
     parse("    7") shouldBe 7.mi
-    parse("-123") shouldBe (-123.mi)
+    parse("-123") shouldBe (-123).mi
   }
 
   it should "read symbols" in {
@@ -43,7 +44,7 @@ class MalParserSpec extends FlatSpec with Matchers {
     parse("  ( +   1   (+   2 3   )   )  ") shouldBe List("+".msym, 1.mi, List("+".msym, 2.mi, 3.mi).ml).ml
     parse("(* 1 2)") shouldBe List("*".msym, 1.mi, 2.mi).ml
     parse("(** 1 2)") shouldBe List("**".msym, 1.mi, 2.mi).ml
-    parse("(* -3 6)") shouldBe List("*".msym, -3.mi, 6.mi).ml
+    parse("(* -3 6)") shouldBe List("*".msym, (-3).mi, 6.mi).ml
   }
 
   it should "treat ',' as whitespace" in {
@@ -75,7 +76,7 @@ class MalParserSpec extends FlatSpec with Matchers {
     parse("  [ +   1   [+   2 3   ]   ]  ") shouldBe List("+".msym, 1.mi, List("+".msym, 2.mi, 3.mi).mv).mv
     parse("[* 1 2]") shouldBe List("*".msym, 1.mi, 2.mi).mv
     parse("[** 1 2]") shouldBe List("**".msym, 1.mi, 2.mi).mv
-    parse("[* -3 6]") shouldBe List("*".msym, -3.mi, 6.mi).mv
+    parse("[* -3 6]") shouldBe List("*".msym, (-3).mi, 6.mi).mv
   }
 
   it should "read maps" in {

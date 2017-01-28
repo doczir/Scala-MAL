@@ -1,5 +1,6 @@
-package hu.lexan.mal
+package hu.lexan.mal.test
 
+import hu.lexan.mal.Repl
 import hu.lexan.mal.ast.{MalAstExtensions, MalExpr}
 import org.scalatest.{FlatSpec, Matchers}
 

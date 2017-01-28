@@ -1,7 +1,8 @@
-package hu.lexan.mal
+package hu.lexan.mal.test
 
-import java.io.{ByteArrayOutputStream, PrintStream}
+import java.io.ByteArrayOutputStream
 
+import hu.lexan.mal.Repl
 import hu.lexan.mal.ast.{MNil, MalAstExtensions, MalExpr}
 import org.scalatest.{FlatSpec, Matchers}
 

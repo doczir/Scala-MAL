@@ -1,5 +1,6 @@
-package hu.lexan.mal
+package hu.lexan.mal.test
 
+import hu.lexan.mal.Repl
 import hu.lexan.mal.ast.{MalAstExtensions, MalExpr}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -27,8 +28,8 @@ class MalEvalSpec extends FlatSpec with Matchers {
     eval("(- (+ 5 (* 2 3)) 3)") shouldBe 8.mi
     eval("(/ (- (+ 5 (* 2 3)) 3) 4)") shouldBe 2.mi
     eval("(/ (- (+ 515 (* 87 311)) 302) 27)") shouldBe 1010.mi
-    eval("(* -3 6)") shouldBe -18.mi
-    eval("(/ (- (+ 515 (* -87 311)) 296) 27)") shouldBe -994.mi
+    eval("(* -3 6)") shouldBe (-18).mi
+    eval("(/ (- (+ 515 (* -87 311)) 296) 27)") shouldBe (-994).mi
   }
 
   it should "handle empty list gracefully" in {
