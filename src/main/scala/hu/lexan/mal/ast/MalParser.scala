@@ -11,7 +11,7 @@ object MalParser extends RegexParsers {
 
   override def skipWhitespace: Boolean = true
 
-  override val whiteSpace: Regex = """[\s,]+|;.*""".r
+  override val whiteSpace: Regex = """([\s,]+|;.*)+""".r
 
   private def spaces: Parser[Unit] = {
     rep1("""[\s,]""".r) ^^ (_ => ())
@@ -101,6 +101,7 @@ object MalParser extends RegexParsers {
     mmacro | list | vector | mmap | atom <~ opt(ignored)
   }
 
+  // TODO: fix error when comment is at line end
   def apply(input: String): Either[MalError, MalExpr] = {
     parse(phrase(expr), input) match {
       case NoSuccess(msg, source) => Left(MalParseError(msg, source))
