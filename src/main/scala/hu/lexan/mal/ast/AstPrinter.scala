@@ -30,5 +30,6 @@ object AstPrinter {
     case MTrue => "true"
     case MFalse => "false"
     case _: MFunction => "#<function>"
+    case _: MClojure => "#<clojure>"
   }
 }
