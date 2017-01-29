@@ -92,7 +92,7 @@ object Interpreter {
         case Left(err) => throw err
       }
       case clojure: MClojure => clojure
-      case _ => throw MalEvaluationError("First element in list is not a function", MNil)
+      case _ => throw MalEvaluationError("First element in list is not a function", MList(args))
     }
   }
 
