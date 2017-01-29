@@ -13,91 +13,91 @@ object MalParser extends RegexParsers {
 
   override val whiteSpace: Regex = """[\s,]+|;.*""".r
 
-  def spaces: Parser[Unit] = {
+  private def spaces: Parser[Unit] = {
     rep1("""[\s,]""".r) ^^ (_ => ())
   }
 
-  def comment: Parser[Unit] = {
+  private def comment: Parser[Unit] = {
     """;.*""".r ^^ (_ => ())
   }
 
-  def ignored: Parser[Unit] = {
+  private def ignored: Parser[Unit] = {
     spaces | comment ^^ (_ => ())
   }
 
-  def symbol: Parser[MalExpr] = {
+  private def symbol: Parser[MalExpr] = {
     """[a-zA-Z!#$%&|*+\-/:<=>?@^_~][0-9a-zA-Z!#$%&|*+\-/:<=>?@^_~]*""".r ^^ (sym => sym.msym)
   }
 
-  def mtrue: Parser[MTrue.type] = "true" ^^ (_ => MTrue)
+  private def mtrue: Parser[MTrue.type] = "true" ^^ (_ => MTrue)
 
-  def mfalse: Parser[MFalse.type] = "false" ^^ (_ => MFalse)
+  private def mfalse: Parser[MFalse.type] = "false" ^^ (_ => MFalse)
 
-  def mnil: Parser[MNil.type] = "nil" ^^ (_ => MNil)
+  private def mnil: Parser[MNil.type] = "nil" ^^ (_ => MNil)
 
-  def integer: Parser[MalExpr] = {
+  private def integer: Parser[MalExpr] = {
     """-?[0-9]+""".r ^^ (int => int.toInt.mi)
   }
 
-  def string: Parser[MalExpr] = {
+  private def string: Parser[MalExpr] = {
     """"(?:\\.|[^\\"])*"""".r ^^ (str => MString(str.substring(1, str.length - 1)))
   }
 
-  def keyword: Parser[MalExpr] = {
+  private def keyword: Parser[MalExpr] = {
     """:[0-9a-zA-Z!#$%&|*+\-/:<=>?@^_~]*""".r ^^ (kw => MKeyword(kw.substring(1)))
   }
 
-  def list: Parser[MalExpr] = {
+  private def list: Parser[MalExpr] = {
     "(" ~> rep(expr) <~ ")" ^^ {
       nodes => MList(nodes)
     }
   }
 
-  def vector: Parser[MalExpr] = {
+  private def vector: Parser[MalExpr] = {
     "[" ~> rep(expr) <~ "]" ^^ {
       nodes => MVector(nodes)
     }
   }
 
-  def mmap: Parser[MalExpr] = {
+  private def mmap: Parser[MalExpr] = {
     "{" ~> rep(expr) <~ "}" ^^ { 
       nodes => MMap(nodes.grouped(2).map { case (key :: value :: Nil) => (key, value) }.toMap)
     }
   }
 
-  def atom: Parser[MalExpr] = {
+  private def atom: Parser[MalExpr] = {
     integer | string | mtrue | mfalse | mnil | keyword | symbol
   }
 
-  def quote: Parser[MalExpr] = {
+  private def quote: Parser[MalExpr] = {
     "'" ~> expr ^^ {x => MList(List(MSymbol("quote"), x))}
   }
 
-  def quasiquote: Parser[MalExpr] = {
+  private def quasiquote: Parser[MalExpr] = {
     "`" ~> expr ^^ {x => MList(List(MSymbol("quasiquote"), x))}
   }
 
-  def spliceUnquote: Parser[MalExpr] = {
+  private def spliceUnquote: Parser[MalExpr] = {
     "~@" ~> expr ^^ {x => MList(List(MSymbol("splice-unquote"), x))}
   }
 
-  def unquote: Parser[MalExpr] = {
+  private def unquote: Parser[MalExpr] = {
     "~" ~> expr ^^ {x => MList(List(MSymbol("unquote"), x))}
   }
 
-  def deref: Parser[MalExpr] = {
+  private def deref: Parser[MalExpr] = {
     "@" ~> expr ^^ {x => MList(List(MSymbol("deref"), x))}
   }
 
-  def withMeta: Parser[MalExpr] = {
+  private def withMeta: Parser[MalExpr] = {
     "^" ~> expr ~ expr ^^ {case meta ~ x => MList(List(MSymbol("with-meta"), x, meta))}
   }
 
-  def mmacro: Parser[MalExpr] = {
+  private def mmacro: Parser[MalExpr] = {
     quote | quasiquote | spliceUnquote | unquote | deref | withMeta
   }
 
-  def expr: Parser[MalExpr] = {
+  private def expr: Parser[MalExpr] = {
     mmacro | list | vector | mmap | atom <~ opt(ignored)
   }
 
