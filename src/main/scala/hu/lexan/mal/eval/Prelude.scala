@@ -169,10 +169,10 @@ object Prelude {
 
   lazy val swap: MalOp = chainMalOp {
     case (atom: Atom) :: (MFunction(fn)) :: args =>
-      atom.value = fn(atom :: args)
+      atom.value = fn(atom.value :: args)
       atom.value
     case (atom: Atom) :: (MClojure(fn, _, _, _)) :: args =>
-      atom.value = fn(atom :: args)
+      atom.value = fn(atom.value :: args)
       atom.value
   }
   val env: Environment = {
