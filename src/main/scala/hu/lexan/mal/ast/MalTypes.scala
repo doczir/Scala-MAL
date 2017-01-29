@@ -1,6 +1,7 @@
 package hu.lexan.mal.ast
 
 import hu.lexan.mal.error.MalError
+import hu.lexan.mal.eval.Environment
 
 // ===================================
 //                AST
@@ -21,7 +22,12 @@ case class MString(string: String) extends AnyVal with MalExpr
 
 case class MKeyword(string: String) extends AnyVal with MalExpr
 
-case class MFunction(fn: (List[MalExpr] => Either[MalError, MalExpr])) extends AnyVal with MalExpr
+case class MFunction(fn: (List[MalExpr] => Either[MalError, MalExpr])) extends MalExpr
+
+case class MClojure(fn: (List[MalExpr] => Either[MalError, MalExpr]),
+                    ast: MalExpr,
+                    env: Environment,
+                    params: MalExpr) extends MalExpr
 
 object MNil extends MalExpr
 
@@ -56,6 +62,7 @@ object MalAstExtensions {
   implicit class RichMalBool(val s: Boolean) extends AnyVal {
     def mb: MalExpr = if (s) MTrue else MFalse
   }
+
 }
 
 

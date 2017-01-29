@@ -31,7 +31,7 @@ object Interpreter {
     }
   }
 
-  private def handleLet(ast: MList, env: Environment, rest: List[MalExpr]) = rest match {
+  private final def handleLet(ast: MList, env: Environment, rest: List[MalExpr]) = rest match {
     case (MList(definitions) :: expr :: Nil) =>
       letEnv(definitions, env).flatMap { newEnv =>
         evaluate(expr, newEnv)
@@ -43,7 +43,7 @@ object Interpreter {
     case _ => Left(MalEvaluationError("Illegal 'let*' expression", ast))
   }
 
-  def handleDo(ast: MList, env: Environment, rest: List[MalExpr]): Either[MalError, MalExpr] = {
+  private final def handleDo(ast: MList, env: Environment, rest: List[MalExpr]): Either[MalError, MalExpr] = {
     val it = rest.iterator
     var evaluated: Either[MalError, MalExpr] = null
     while (it.hasNext) {
@@ -53,7 +53,7 @@ object Interpreter {
     evaluated
   }
 
-  def handleIf(ast: MList, env: Environment, rest: List[MalExpr]): Either[MalError, MalExpr] = rest match {
+  private final def handleIf(ast: MList, env: Environment, rest: List[MalExpr]): Either[MalError, MalExpr] = rest match {
     case first :: truthBranch :: falseBranch :: Nil => evaluate(first, env).flatMap {
       case MFalse => evaluate(falseBranch, env)
       case MNil => evaluate(falseBranch, env)
@@ -67,7 +67,6 @@ object Interpreter {
     case _ => Left(MalEvaluationError("Invalid number of elements in if expression", ast))
   }
 
-
   def createClojure(ast: MList, env: Environment, rest: List[MalExpr]): scala.Either[MalError, MalExpr] = rest match {
     case a1 :: a2 :: Nil => for {
       params <- a1 match {
@@ -76,24 +75,14 @@ object Interpreter {
         case _ => Left(MalEvaluationError("Clojure parameter list must either be a list or a vector", ast))
       }
     } yield {
-      MFunction(args => {
+      MClojure(args => {
         for {
           newEnv <- Environment.bind(Some(env), params, args)
           evaluated <- evaluate(a2, newEnv)
         } yield evaluated
-      })
+      }, a2, env, MList(params))
     }
-  }
-
-  private def applyAst(ast: MList, env: Environment): Either[MalError, MalExpr] = ast match {
-    case list@MList(Nil) => Right(list)
-    case MList(MSymbol("def!") :: rest) => define(ast, env, rest)
-    case MList(MSymbol("fn*") :: rest) => createClojure(ast, env, rest)
-    case MList(MSymbol("let*") :: rest) => handleLet(ast, env, rest)
-    case MList(MSymbol("do") :: rest) => handleDo(ast, env, rest)
-    case MList(MSymbol("if") :: rest) => handleIf(ast, env, rest)
-    case list: MList => applyFunction(ast, env, list)
-    case _ => Left(MalEvaluationError("Invalid list expression", ast))
+    case _ => Left(MalEvaluationError("Clojure construction failed", ast))
   }
 
   private def define(ast: MList, env: Environment, rest: List[MalExpr]) = {
@@ -108,6 +97,17 @@ object Interpreter {
     }
   }
 
+  private final def applyAst(ast: MList, env: Environment): Either[MalError, MalExpr] = ast match {
+    case list@MList(Nil) => Right(list)
+    case MList(MSymbol("def!") :: rest) => define(ast, env, rest)
+    case MList(MSymbol("fn*") :: rest) => createClojure(ast, env, rest)
+    case MList(MSymbol("let*") :: rest) => handleLet(ast, env, rest)
+    case MList(MSymbol("do") :: rest) => handleDo(ast, env, rest)
+    case MList(MSymbol("if") :: rest) => handleIf(ast, env, rest)
+    case list: MList => applyFunction(ast, env, list)
+    case _ => Left(MalEvaluationError("Invalid list expression", ast))
+  }
+
   private def applyFunction(ast: MList, env: Environment, list: MList) = {
     for {
       evaluated <- evaluateAst(list, env)
@@ -116,6 +116,10 @@ object Interpreter {
         val first = evalElements.head
         first match {
           case MFunction(fn) => fn(evalElements.tail)
+          case MClojure(_, clojureAst, clojureEnv, MList(params)) => for {
+            newEnv <- Environment.bind(Some(clojureEnv), params, evalElements.tail)
+            evaluated <- evaluate(clojureAst, newEnv)
+          } yield evaluated
           case _ => Left(MalEvaluationError("First element in list is not a function", ast))
         }
       }
