@@ -6,11 +6,6 @@ import org.scalatest.{FlatSpec, Matchers}
 class MalEnvSpec extends FlatSpec with Matchers with ReplEvaluator {
   import MalAstExtensions._
 
-  "The environment" should "contain prelude" in {
-    eval("(+ 1 2)") shouldBe 3.mi
-    eval("(/ (- (+ 5 (* 2 3)) 3) 4)") shouldBe 2.mi
-  }
-
   it should "add elements with def!" in {
     eval("(def! x 3)") shouldBe 3.mi
     eval("x") shouldBe 3.mi
