@@ -1,125 +1,179 @@
 package hu.lexan.mal.eval
 
-import hu.lexan.mal.ast._
-import hu.lexan.mal.error.{MalError, MalEvaluationError}
+import hu.lexan.mal.ast.{MalExpr, _}
+import hu.lexan.mal.error.MalEvaluationError
+
+import scala.io.Source
 
 object Prelude {
 
   import MalAstExtensions._
 
-  private def add(args: List[MalExpr]) = args match {
-    case (a: MInteger) :: (b: MInteger) :: Nil => Right(MInteger(a.value + b.value))
-    case _ => Left(MalEvaluationError("Illegal arguments to +", MList("+".msym :: args)))
+  type MalOp = PartialFunction[List[MalExpr], MalExpr]
+  type BinOp = PartialFunction[(MalExpr, MalExpr), MalExpr]
+
+  def chain[Op <: PartialFunction[In, Out], In, Out](ops: Op*): PartialFunction[In, Out] = (PartialFunction.empty[In, Out] /: ops) (_ orElse _)
+
+  def chainBinOp(ops: BinOp*): BinOp = chain[BinOp, (MalExpr, MalExpr), MalExpr](ops: _*)
+
+  def chainMalOp(ops: MalOp*): MalOp = chain[MalOp, List[MalExpr], MalExpr](ops: _*)
+
+  def applyBinOpOrFail(op: BinOp): (MalExpr, MalExpr) => MalExpr = (arg1: MalExpr, arg2: MalExpr) => (op.lift) (arg1, arg2).getOrElse {
+    throw MalEvaluationError(s"Unable to apply operation to arguments $arg1 and $arg2")
   }
 
-  private def sub(args: List[MalExpr]) = args match {
-    case (a: MInteger) :: (b: MInteger) :: Nil => Right(MInteger(a.value - b.value))
-    case _ => Left(MalEvaluationError("Illegal arguments to -", MList("-".msym :: args)))
+  def applyMalOpOrFail(op: MalOp): List[MalExpr] => MalExpr = (args: List[MalExpr]) => (op.lift) (args).getOrElse {
+    throw MalEvaluationError(s"Unable to apply operation to arguments $args")
   }
 
-  private def mul(args: List[MalExpr]) = args match {
-    case (a: MInteger) :: (b: MInteger) :: Nil => Right(MInteger(a.value * b.value))
-    case _ => Left(MalEvaluationError("Illegal arguments to *", MList("*".msym :: args)))
+  def binOpToMFunc(initialValue: MalExpr, op: BinOp): MFunction = MFunction({
+    case args => (initialValue /: args) (applyBinOpOrFail(op))
+  })
+
+  def binOpToMFunc(op: BinOp): MFunction = MFunction({
+    case arg1 :: args => (arg1 /: args) (applyBinOpOrFail(op))
+  })
+
+  def malOpToMFunc(op: MalOp): MFunction = MFunction({
+    case args => applyMalOpOrFail(op)(args)
+  })
+
+  lazy val add: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => MInteger(a + b)
   }
 
-  private def div(args: List[MalExpr]) = args match {
-    case (a: MInteger) :: (b: MInteger) :: Nil => Right(MInteger(a.value / b.value))
-    case _ => Left(MalEvaluationError("Illegal arguments to /", MList("/".msym :: args)))
+  lazy val sub: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => MInteger(a - b)
   }
 
-  private def prn(args: List[MalExpr]): Either[MalError, MalExpr] = {
-    println(args.map(AstPrinter.print(_)).mkString(" "))
-    Right(MNil)
+  lazy val mul: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => MInteger(a * b)
   }
 
-  private def prnln(args: List[MalExpr]): Either[MalError, MalExpr] = {
-    println(args.map(AstPrinter.print(_, readable = false)).mkString(" "))
-    Right(MNil)
+  lazy val div: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => MInteger(a / b)
   }
 
-  private def pr_str(args: List[MalExpr]): Either[MalError, MalExpr] = {
-    Right(MString(args.map(AstPrinter.print(_)).mkString(" ")))
+  lazy val lt: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => (a < b).mb
   }
 
-  private def str(args: List[MalExpr]): Either[MalError, MalExpr] = {
-    Right(MString(args.map(AstPrinter.print(_, readable = false)).mkString(" ")))
+  lazy val lte: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => (a <= b).mb
   }
 
-  private def list(args: List[MalExpr]): Either[MalError, MalExpr] = {
-    Right(MList(args))
+  lazy val gt: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => (a > b).mb
   }
 
-  private def list_test(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case (_: MList) :: _ => Right(MTrue)
-    case _ => Right(MFalse)
+  lazy val gte: BinOp = chainBinOp {
+    case (MInteger(a), MInteger(b)) => (a >= b).mb
   }
 
-  private def empty_test(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MList(elements) :: _ if elements.isEmpty => Right(MTrue)
-    case _ => Right(MFalse)
+  lazy val eq: BinOp = chainBinOp {
+    case (a, b) => (a == b).mb
   }
 
-  private def count(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MList(elements) :: _ => Right(elements.length.mi)
-    case _ => Right(0.mi)
+  lazy val prn: MalOp = chainMalOp {
+    case (values: List[MalExpr]) =>
+      println(values.map(AstPrinter.print(_)).mkString(" "))
+      MNil
   }
 
-  private def equal_test(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case a1 :: a2 :: _ => Right((a1 == a2).mb)
-    case _ => Right(MFalse)
+  lazy val prnln: MalOp = chainMalOp {
+    case (values: List[MalExpr]) =>
+      println(values.map(AstPrinter.print(_, readable = false)).mkString(" "))
+      MNil
   }
 
-  private def lt(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MInteger(a1) :: MInteger(a2) :: Nil => Right((a1 < a2).mb)
-    case _ => Left(MalEvaluationError("Illegal arguments to <", MList("<".msym :: args)))
+  lazy val prstr: MalOp = chainMalOp {
+    case (values: List[MalExpr]) =>
+      MString(values.map(AstPrinter.print(_)).mkString(" "))
   }
 
-  private def gt(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MInteger(a1) :: MInteger(a2) :: Nil => Right((a1 > a2).mb)
-    case _ => Left(MalEvaluationError("Illegal arguments to >", MList(">".msym :: args)))
+  lazy val str: MalOp = chainMalOp {
+    case (values: List[MalExpr]) =>
+      MString(values.map(AstPrinter.print(_, readable = false)).mkString(" "))
   }
 
-  private def lte(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MInteger(a1) :: MInteger(a2) :: Nil => Right((a1 <= a2).mb)
-    case _ => Left(MalEvaluationError("Illegal arguments to <=", MList("<=".msym :: args)))
+  lazy val list: MalOp = chainMalOp {
+    case (values: List[MalExpr]) =>
+      MList(values)
   }
 
-  private def gte(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MInteger(a1) :: MInteger(a2) :: Nil => Right((a1 >= a2).mb)
-    case _ => Left(MalEvaluationError("Illegal arguments to >=", MList(">=".msym :: args)))
+  lazy val islist: MalOp = chainMalOp {
+    case (_: MList) :: Nil => MTrue
+    case _ :: Nil => MFalse
   }
 
-  private def not(args: List[MalExpr]): Either[MalError, MalExpr] = args match {
-    case MFalse :: Nil => Right(MTrue)
-    case MNil :: Nil => Right(MTrue)
-    case _ => Right(MFalse)
+  lazy val isempty: MalOp = chainMalOp {
+    case MList(elements) :: Nil if elements.isEmpty => MTrue
+    case MList(_) :: Nil => MFalse
   }
 
+  lazy val count: MalOp = chainMalOp {
+    case MList(elements) :: _ => elements.length.mi
+    case _ => 0.mi
+  }
 
+  lazy val not: MalOp = chainMalOp {
+    case MFalse :: Nil => MTrue
+    case MNil :: Nil => MTrue
+    case _ => MFalse
+  }
+
+  lazy val readString: MalOp = chainMalOp {
+    case MString(input) :: Nil => MalParser(input) match {
+      case Right(result) => result
+      case Left(ex) => throw ex
+    }
+  }
+
+  lazy val slurp: MalOp = chainMalOp {
+    case MString(filename) :: Nil => MString(Source.fromFile(filename).mkString)
+  }
+
+  lazy val eval: MalOp = chainMalOp {
+    case ast :: Nil => Interpreter.evaluate(ast) match {
+      case Right(result) => result
+      case Left(ex) => throw ex
+    }
+  }
+
+  lazy val loadfile: MalOp = chainMalOp {
+    case args =>
+      val MString(prog) = slurp(args)
+      val surroundedProg = s"(do $prog)"
+      eval(List(readString(List(MString(surroundedProg)))))
+  }
 
   val env: Environment = {
     val env = new Environment()
 
-    env.define("+".msym, MFunction(add))
-    env.define("-".msym, MFunction(sub))
-    env.define("*".msym, MFunction(mul))
-    env.define("/".msym, MFunction(div))
-    env.define("pr-str".msym, MFunction(pr_str))
-    env.define("str".msym, MFunction(str))
-    env.define("prn".msym, MFunction(prn))
-    env.define("println".msym, MFunction(prnln))
-    env.define("list".msym, MFunction(list))
-    env.define("list?".msym, MFunction(list_test))
-    env.define("empty?".msym, MFunction(empty_test))
-    env.define("count".msym, MFunction(count))
-    env.define("=".msym, MFunction(equal_test))
-    env.define("<".msym, MFunction(lt))
-    env.define(">".msym, MFunction(gt))
-    env.define("<=".msym, MFunction(lte))
-    env.define(">=".msym, MFunction(gte))
-    env.define("not".msym, MFunction(not))
+    env.define("+".msym, binOpToMFunc(MInteger(0), add))
+    env.define("-".msym, binOpToMFunc(sub))
+    env.define("*".msym, binOpToMFunc(MInteger(1), mul))
+    env.define("/".msym, binOpToMFunc(div))
+    env.define("<".msym, binOpToMFunc(lt))
+    env.define("<=".msym, binOpToMFunc(lte))
+    env.define(">".msym, binOpToMFunc(gt))
+    env.define(">=".msym, binOpToMFunc(gte))
+    env.define("=".msym, binOpToMFunc(eq))
+    env.define("prn".msym, malOpToMFunc(prn))
+    env.define("println".msym, malOpToMFunc(prnln))
+    env.define("pr-str".msym, malOpToMFunc(prstr))
+    env.define("str".msym, malOpToMFunc(str))
+    env.define("list".msym, malOpToMFunc(list))
+    env.define("list?".msym, malOpToMFunc(islist))
+    env.define("empty?".msym, malOpToMFunc(isempty))
+    env.define("count".msym, malOpToMFunc(count))
+    env.define("not".msym, malOpToMFunc(not))
+    env.define("read-string".msym, malOpToMFunc(readString))
+    env.define("slurp".msym, malOpToMFunc(slurp))
+    env.define("eval".msym, malOpToMFunc(eval))
+    env.define("load-file".msym, malOpToMFunc(loadfile))
+
     env
   }
-
 
 }

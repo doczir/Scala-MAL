@@ -68,9 +68,7 @@ object Interpreter {
       }
       MClojure(args => {
         val newEnv = Environment.bind(Some(env), params, args)
-        tryToEither(Try {
-          evaluate(a2, newEnv)
-        })
+        evaluate(a2, newEnv)
       }, a2, env, MList(params))
 
     case _ => throw MalEvaluationError("Clojure construction failed", ast)
@@ -84,19 +82,16 @@ object Interpreter {
     case _ => throw MalEvaluationError("def! requires a symbol and an expression argument", ast)
   }
 
-  private def applyFunction(args: List[MalExpr], env: Environment): MalExpr = {
+  private def applyFunction(args: List[MalExpr], env: Environment): (MalExpr, Boolean) = {
     val first = args.head
     first match {
-      case MFunction(fn) => fn(args.tail) match {
-        case Right(res) => res
-        case Left(err) => throw err
-      }
-      case clojure: MClojure => clojure
+      case MFunction(fn) => (fn(args.tail), false)
+      case clojure: MClojure => (clojure, true)
       case _ => throw MalEvaluationError("First element in list is not a function", MList(args))
     }
   }
 
-  private def evaluateAst(ast: MalExpr, env: Environment): MalExpr = ast match {
+  private def resolvSymbols(ast: MalExpr, env: Environment): MalExpr = ast match {
     case sym: MSymbol => env.get(sym) match {
       case Right(res) => res
       case Left(err) => throw err
@@ -126,17 +121,16 @@ object Interpreter {
         val last = handleDo(list, env, rest)
         evaluate(last, env)
       case MSymbol("if") :: rest => evaluate(handleIf(list, env, rest), env)
-      case _ => {
-        val evalElements = evaluateAst(list, env).asInstanceOf[MList].elements
-        applyFunction(evalElements, env) match {
-          case MClojure(_, clojureAst, clojureEnv, MList(params)) =>
-            val newEnv = Environment.bind(Some(clojureEnv), params, evalElements.tail)
+      case _ =>
+        val resolvedList = resolvSymbols(list, env).asInstanceOf[MList].elements
+        applyFunction(resolvedList, env) match {
+          case (MClojure(_, clojureAst, clojureEnv, MList(params)), true) =>
+            val newEnv = Environment.bind(Some(clojureEnv), params, resolvedList.tail)
             evaluate(clojureAst, newEnv)
-          case n => n
+          case (n, _) => n
         }
-      }
     }
-    case _ => evaluateAst(ast, env)
+    case _ => resolvSymbols(ast, env)
   }
 
 }
