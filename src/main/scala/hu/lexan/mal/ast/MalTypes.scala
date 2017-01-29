@@ -64,6 +64,10 @@ object MalAstExtensions {
     def mb: MalExpr = if (s) MTrue else MFalse
   }
 
+  implicit class RichMalExpr(val expr: MalExpr) extends AnyVal {
+    def a: MalExpr = Atom(expr)
+  }
+
 }
 
 
