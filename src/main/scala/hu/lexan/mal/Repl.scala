@@ -21,6 +21,8 @@ object Repl {
 
   def reportParseError(err: MalParseError): Unit = {
     println(s"Parse error: ${err.msg}")
+    if (err.source.source.length() == 0) return
+
     val listing = err.source.pos.longString
     val lines = listing.lines.toArray
     val lineno = s"${err.source.pos.line}| "
