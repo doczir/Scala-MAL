@@ -28,6 +28,8 @@ case class MClojure(fn: (List[MalExpr] => MalExpr),
                     env: Environment,
                     params: MalExpr) extends MalExpr
 
+case class Atom(var value: MalExpr) extends MalExpr
+
 object MNil extends MalExpr
 
 object MTrue extends MalExpr

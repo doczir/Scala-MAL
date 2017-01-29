@@ -147,6 +147,34 @@ object Prelude {
       eval(List(readString(List(MString(surroundedProg)))))
   }
 
+  lazy val atom: MalOp = chainMalOp {
+    case value :: Nil => Atom(value)
+  }
+
+  lazy val isatom: MalOp = chainMalOp {
+    case Atom(_) :: Nil => MTrue
+    case _ :: Nil => MFalse
+  }
+
+  lazy val deref: MalOp = chainMalOp {
+    case Atom(value) :: Nil => value
+  }
+
+  lazy val reset: MalOp = chainMalOp {
+    case (atom: Atom) :: (newValue: MalExpr) :: Nil =>
+      atom.value = newValue
+      newValue
+  }
+
+
+  lazy val swap: MalOp = chainMalOp {
+    case (atom: Atom) :: (MFunction(fn)) :: args =>
+      atom.value = fn(atom :: args)
+      atom.value
+    case (atom: Atom) :: (MClojure(fn, _, _, _)) :: args =>
+      atom.value = fn(atom :: args)
+      atom.value
+  }
   val env: Environment = {
     val env = new Environment()
 

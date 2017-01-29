@@ -26,6 +26,7 @@ object AstPrinter {
     case MMap(elems) => s"{${
       elems.map { case (key, value) => s"${print(key)} ${print(value)}" }.mkString(" ")
     }}"
+    case Atom(value) => value.toString
     case MNil => "nil"
     case MTrue => "true"
     case MFalse => "false"
