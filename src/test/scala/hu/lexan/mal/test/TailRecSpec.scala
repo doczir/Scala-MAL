@@ -3,7 +3,7 @@ package hu.lexan.mal.test
 import hu.lexan.mal.ast.{MNil, MalAstExtensions}
 import org.scalatest.{FlatSpec, Matchers}
 
-class TailRec extends FlatSpec with Matchers with ReplEvaluator {
+class TailRecSpec extends FlatSpec with Matchers with ReplEvaluator {
 
   import MalAstExtensions._
 

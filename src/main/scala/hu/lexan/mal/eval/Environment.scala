@@ -20,10 +20,10 @@ class Environment(outer: Option[Environment] = None, private val symbolTable: mu
 }
 
 object Environment {
-  def bind(outer: Option[Environment], names: List[MalExpr], exprs: List[MalExpr]): Either[MalEvaluationError, Environment] = {
+  def bind(outer: Option[Environment], names: List[MalExpr], exprs: List[MalExpr]): Environment = {
     case class Iterator(exps: List[MalExpr], map: mutable.Map[MSymbol, MalExpr])
     val namesIt = names.iterator
-    namesIt.foldLeft(Right(Iterator(exprs, mutable.Map())): Either[MalEvaluationError, Iterator]) {
+    val resultEnv = namesIt.foldLeft(Right(Iterator(exprs, mutable.Map())): Either[MalEvaluationError, Iterator]) {
       case (Right(it), nameSym@MSymbol(name)) =>
         // TODO: handle when there are not enough expressions
         if (name == "&") namesIt.next() match {
@@ -32,5 +32,8 @@ object Environment {
         } else Right(Iterator(it.exps.tail, it.map + ((nameSym, it.exps.head))))
       case (_, name) => Left(MalEvaluationError("Name is not a symbol", name))
     }.map(it => new Environment(outer, it.map))
+    if (resultEnv.isLeft)
+      throw resultEnv.left.get
+    resultEnv.right.get
   }
 }
