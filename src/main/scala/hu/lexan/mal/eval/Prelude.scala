@@ -200,6 +200,11 @@ object Prelude {
     env.define("slurp".msym, malOpToMFunc(slurp))
     env.define("eval".msym, malOpToMFunc(eval))
     env.define("load-file".msym, malOpToMFunc(loadfile))
+    env.define("atom".msym, malOpToMFunc(atom))
+    env.define("atom?".msym, malOpToMFunc(isatom))
+    env.define("deref".msym, malOpToMFunc(deref))
+    env.define("reset!".msym, malOpToMFunc(reset))
+    env.define("swap!".msym, malOpToMFunc(swap))
 
     env
   }
